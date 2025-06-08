@@ -2,17 +2,17 @@
 
 A web-based Python application that allows users to:
 
-- Enter a **Train Number or PNR** and **Travel Date**
-- Select a **station** from the route
+- Enter a **PNR** or **Train Number and Travel Date**
+- Select one or many **station/s** from the route
 - Receive a **loud alarm alert** when the train reaches the selected station
 
-Built using **Flask**, **HTML/JavaScript**, and **RapidAPI** for real-time train status.
+Built using **Flask**, **HTML/CSS/JavaScript**, and **RapidAPI** for real-time train status.
 
 ---
 
 ## 📸 Demo
 
-> Coming soon — you can record a short GIF or video once deployed.
+> Coming soon — a short GIF or video once deployed.
 
 ---
 
@@ -30,7 +30,7 @@ Built using **Flask**, **HTML/JavaScript**, and **RapidAPI** for real-time train
 ## 🛠 Tech Stack
 
 - Python (Flask)
-- HTML + JavaScript
+- HTML + CSS + JavaScript
 - RapidAPI (live train tracking)
 - dotenv (secure API credentials)
 

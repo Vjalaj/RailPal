@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Station Alert</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            transition: background-color 0.3s ease;
+        }
+        .dark-mode {
+            background-color: #212529;
+            color: #fff;
+        }
+        .dark-mode .card {
+            background-color: #343a40;
+            border-color: #495057;
+        }
+        .dark-mode .form-control {
+            background-color: #495057;
+            border-color: #6c757d;
+            color: #fff;
+        }
+        .dark-mode .form-control:focus {
+            background-color: #495057;
+            color: #fff;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <button class="btn btn-outline-primary theme-toggle" onclick="toggleTheme()">
+        <span id="themeIcon">🌙</span>
+    </button>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">🚉 Train Station Alert</h1>
+        
+        <div class="card p-4">
+            <div class="mb-3">
+                <label for="trainNumber" class="form-label">Train Number</label>
+                <input type="text" class="form-control" id="trainNumber" required>
+            </div>
+            <div class="mb-3">
+                <label for="travelDate" class="form-label">Travel Date (YYYY-MM-DD)</label>
+                <input type="date" class="form-control" id="travelDate" required>
+            </div>
+            <button onclick="getTrainRoute()" class="btn btn-primary">Get Route</button>
+
+            <div id="stationList" class="mt-4" style="display: none;">
+                <h3>Select Stations for Alert</h3>
+                <div id="stations" class="list-group"></div>
+                <button onclick="startTracking()" class="btn btn-success mt-3">Start Tracking</button>
+            </div>
+
+            <div id="status" class="mt-4"></div>
+        </div>
+    </div>
+
+    <audio id="alertSound" src="{{ url_for('static', filename='alarm.mp3') }}"></audio>
+
+    <div id="loading" class="alert alert-info" style="display: none;">Loading...</div>
+    <div id="error" class="alert alert-danger" style="display: none;"></div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+            const currentTheme = html.getAttribute('data-bs-theme');
+            
+            if (currentTheme === 'light') {
+                html.setAttribute('data-bs-theme', 'dark');
+                document.body.classList.add('dark-mode');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.setAttribute('data-bs-theme', 'light');
+                document.body.classList.remove('dark-mode');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+                document.body.classList.add('dark-mode');
+                document.getElementById('themeIcon').textContent = '☀️';
+            }
+        });
+
+        let selectedStations = new Set();
+        let trackingInterval;
+
+        async function getTrainRoute() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const trainNumber = document.getElementById('trainNumber').value;
+
+            try {
+                loading.style.display = 'block';
+                error.style.display = 'none';
+                
+                const response = await fetch('/get-train-route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trainNumber })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                const stationList = document.getElementById('stationList');
+                const stationsDiv = document.getElementById('stations');
+                stationsDiv.innerHTML = '';
+                
+                if (!data.stations || !Array.isArray(data.stations)) {
+                    throw new Error('Invalid station data received');
+                }
+                
+                data.stations.forEach(station => {
+                    const button = document.createElement('button');
+                    button.className = 'list-group-item list-group-item-action';
+                    button.textContent = station.name || station.code;
+                    button.onclick = () => toggleStation(station.code);
+                    stationsDiv.appendChild(button);
+                });
+                
+                stationList.style.display = 'block';
+            } catch (e) {
+                error.textContent = `Error: ${e.message}`;
+                error.style.display = 'block';
+                stationList.style.display = 'none';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function toggleStation(stationCode) {
+            if (selectedStations.has(stationCode)) {
+                selectedStations.delete(stationCode);
+                event.target.classList.remove('active');
+            } else {
+                selectedStations.add(stationCode);
+                event.target.classList.add('active');
+            }
+        }
+
+        function startTracking() {
+            if (selectedStations.size === 0) {
+                alert('Please select at least one station');
+                return;
+            }
+
+            const trainNumber = document.getElementById('trainNumber').value;
+            const travelDate = document.getElementById('travelDate').value;
+            const statusDiv = document.getElementById('status');
+
+            trackingInterval = setInterval(async () => {
+                const response = await fetch('/get-live-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trainNumber, date: travelDate })
+                });
+                const data = await response.json();
+                
+                statusDiv.innerHTML = `Current Station: ${data.current_station}`;
+                
+                if (selectedStations.has(data.current_station)) {
+                    document.getElementById('alertSound').play();
+                    alert(`Train has reached ${data.current_station}!`);
+                }
+            }, 60000); // Check every minute
+        }
+    </script>
+</body>
+</html>

@@ -4,6 +4,7 @@ train-alert-app/
 ├── app.py                 # Flask backend
 ├── templates/
 │   └── index.html         # Frontend UI
+│   └── style.css  
 ├── static/
 │   └── alarm.mp3          # Alert sound
 ├── .env                   # API credentials (not committed)
