@@ -43,26 +43,23 @@ Built using **Flask**, **HTML/JavaScript**, and **RapidAPI** for real-time train
 ```bash
 git clone https://github.com/Vjalaj/RailPal.git
 cd RailPal
+```
 
+### 2. Install Requirements
+```bash
 pip install -r requirements.txt
+```
 
+### Then add your RapidAPI credentials inside .env:
+```bash
 cp .env.example .env
 
 RAPIDAPI_KEY=your_rapidapi_key
 RAPIDAPI_HOST=your_rapidapi_host
 RAPIDAPI_URL=https://your_rapidapi_url
+```
 
-
-## 📁 Project Structure
-
-train-alert-app/
-├── app.py                 # Flask backend
-├── templates/
-│   └── index.html         # Frontend
-├── static/
-│   └── alarm.mp3          # Alarm sound
-├── .env                   # API keys
-├── .env.example
-├── .gitignore
-├── requirements.txt
-└── README.md
+### 3. Run the App
+```bash
+python app.py
+```
